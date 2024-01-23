@@ -63,7 +63,7 @@ def main():
 
     print("")
     print("Generating report...")
-    for enrollment in tqdm(enrollments[:3]):
+    for enrollment in tqdm(enrollments):
         data_string += create_summary(course, enrollment)
 
     print("")
