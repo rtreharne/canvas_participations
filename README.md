@@ -36,7 +36,7 @@ python3 -m virtualenv .venv
 pip3 install -r requirements.txt
 ```
 
-3. Run `main.py`
+### 3. Run `main.py`
 
 Windows:
 
