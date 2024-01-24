@@ -30,6 +30,23 @@ def create_summary(course, enrollment):
     
     return data_string
 
+def get_assignments(course):
+    assignments = [x for x in course.get_assignments() if x.published and x.has_submitted_submissions]
+    return assignments
+
+def get_assignment_submissions(assignment):
+    submissions = [x for x in assignment.get_submissions(include=["user"]) if x.workflow_state == "graded"]
+    return submissions
+
+def build_assignment_dict(course, assignments):
+    assignment_dict = {}
+    for assignment in assignments:
+        submissions = get_assignment_submissions(assignment)
+        assignment_dict[assignment.name] = {x.user["sortable_name"]: x.score for x in submissions}
+
+    return assignment_dict
+
+
 def save_as_csv(fname, data_string):
     with open(fname, 'w') as f:
         f.write(data_string)
@@ -40,13 +57,22 @@ def main():
     print("By R. Treharne, University of Liverpool, 2024")
     print("")
 
-    CANVAS_API_URL = input("Enter the Canvas API URL (e.g. https://canvas.liverpool.ac.uk): ")
-    CANVAS_API_TOKEN = input("Enter the Canvas API Token: ")
+    # if there is a config file, use that
+    try:
+        from config import CANVAS_API_URL, CANVAS_API_TOKEN, course_id
+        print("Using config.py file")
+        print("")
+        print("Canvas API URL: ", CANVAS_API_URL)
+        print("Canvas API Token: ", CANVAS_API_TOKEN)   
+        print("Course ID: ", course_id) 
+    except:
+        CANVAS_API_URL = input("Enter the Canvas API URL (e.g. https://canvas.liverpool.ac.uk): ")
+        CANVAS_API_TOKEN = input("Enter the Canvas API Token: ")
+        course_id = input("Enter the course ID: ")
+
     canvas = Canvas(CANVAS_API_URL, CANVAS_API_TOKEN)
 
-    course_id = input("Enter the course ID: ")
     # Get the course object
-
     try:
         course = canvas.get_course(course_id)
     except:
@@ -58,12 +84,16 @@ def main():
     print("Getting student enrollments...")
     enrollments = [x for x in course.get_enrollments(include=["user"]) if x.type == "StudentEnrollment"]
 
+    print("")
+    print("Getting assignments...")
+    assignments = get_assignments(course)
+    
     fname = "output.csv"
-    data_string = ""
+    data_string = "last_name,first_name,datetime,page_views\n"
 
     print("")
     print("Generating report...")
-    for enrollment in tqdm(enrollments):
+    for enrollment in tqdm(enrollments[:]):
         data_string += create_summary(course, enrollment)
 
     print("")
